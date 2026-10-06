@@ -1,0 +1,74 @@
+# role_config.yaml
+# Role activation, effort, and provider mapping for the consensus audit.
+# The reviewer `model` values record the Codex-backend defaults and map models to
+# providers for the provider check. They do not select the model a reviewer runs on:
+# use --reviewer-{a,b,c}-model or CONSENSUS_AUDIT_REVIEWER_{A,B,C}_MODEL for that.
+# ---
+config_version: 1
+
+# -----------------------------------------------------------------------------
+# Main-agent roles (the orchestrating agent itself)
+# -----------------------------------------------------------------------------
+main_agent:
+  # Baseline analysis, moderator synthesis, and postwork synthesis.
+  # These record the current orchestrating agent session rather than pinning
+  # a separate provider/model for the main agent itself.
+  baseline_moderator_postwork:
+    model: current-main-session
+    provider: current-agent-session
+    extended_thinking:
+      enabled: true
+    description: >
+      Records the active main-agent session used for baseline review,
+      moderator adjudication, and postwork synthesis.
+
+  # Ordinary revision passes (non-critical rewrites)
+  ordinary_revision:
+    model: current-main-session
+    provider: current-agent-session
+    extended_thinking:
+      enabled: false
+    description: >
+      Records the active main-agent session used for straightforward
+      revision work.
+
+# -----------------------------------------------------------------------------
+# Consensus-audit reviewer roles
+# -----------------------------------------------------------------------------
+reviewers:
+  # These effort values record the CLI defaults; flags select runtime effort.
+  # The runner explicitly passes high to Codex and Claude by default.
+  # An explicit adaptive override omits the runtime effort flag and inherits CLI config.
+
+  # Tim Sir -- protocol/evidence-gate reviewer
+  tim-sir:
+    model: gpt-6.1-sol
+    provider: openai
+    exec_backend: codex_exec
+    reasoning_effort: high
+    default_active: true              # U2: standard tier (always active)
+    description: >
+      Protocol integrity, dependency coherence, architecture fit, and
+      evidence-gate logic.
+
+  # Sam Koo -- evidence/forensic reviewer
+  sam-koo:
+    model: gpt-6.1-sol
+    provider: openai
+    exec_backend: codex_exec
+    reasoning_effort: high
+    default_active: true              # U2: standard tier (always active)
+    description: >
+      Evidence completeness, reproducibility, plan-vs-actual proof,
+      and edge-case traceability.
+
+  # Madam Leung -- operational/case-command reviewer
+  nicole-leung:
+    model: gpt-6.1-sol
+    provider: openai
+    exec_backend: codex_exec
+    reasoning_effort: high
+    default_active: false             # U2: heavy tier only (auto-promoted on risk_level>=high)
+    description: >
+      Case command, runtime/rollout safety, phased rollout planning,
+      rollback verification, and operational blast-radius analysis.

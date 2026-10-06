@@ -1,0 +1,106 @@
+# evidence_manifest.yaml
+# Evidence requirements per blocker class (C5/C6).
+# Every blocker raised by a reviewer must be backed by the listed evidence.
+# A blocker whose required evidence is absent is recorded as an open
+# EVIDENCE_COMPLETENESS_FAIL and holds the round open; it is NOT downgraded to a
+# warning. (This text previously claimed a downgrade the runner never performed.)
+# ---
+config_version: 2
+
+# -----------------------------------------------------------------------------
+# U6: READING_LOG validation requirements
+# -----------------------------------------------------------------------------
+# Reviewers must produce a READING_LOG markdown table with columns:
+#   # | path | total_lines | sha256_first8 | status
+# `consensus_audit.py validate_reading_log()` matches each row mechanically.
+reading_log:
+  required: true                    # Fail-closed if section/table missing
+  # These bound the NUMBER OF FILES a reviewer reports in READING_LOG. They were once
+  # named min/max_chain_depth and described as dependency depth, but the validator has
+  # always compared the row count: a reviewer reading many sibling files failed a check
+  # labelled "too deep". Renamed to match behaviour; the old keys still work.
+  min_files_read: 2                 # Reviewer must read beyond the baseline alone. Counts
+                                    # logged rows plus workspace files the review cites at an
+                                    # existing line (path:line), counted once per distinct
+                                    # content; required_files still need rows.
+  max_files_read: 40                # Bounds runaway scope, not thoroughness
+  fail_on_skipped: true             # Any 'SKIPPED:<reason>' entry → fail-closed
+  fail_on_missing: true             # Any required_files[] not in READING_LOG → fail-closed
+  validate_sha256: true             # Each entry's sha256 must match actual file
+  validate_line_count: true         # Each entry's total_lines within ±1 of actual wc -l
+  # required_files: populated dynamically by the main agent per round; example shape:
+  # required_files:
+  #   - { path: /path/to/baseline.md }
+  #   - { path: /path/to/runner.py }
+
+# -----------------------------------------------------------------------------
+# Blocker classes and their required evidence
+# -----------------------------------------------------------------------------
+# The identifiers under each class's `required_evidence` are matched against the evidence
+# the MAIN-AGENT BASELINE declares, not against the reviewer's text. The baseline announces
+# them with a line such as:
+#
+#   EVIDENCE_DECLARED: affected_code_path, reasoning_trace
+#
+# at the start of a line (a per-blocker `Evidence: <id>` line is also recognised). A reviewer
+# blocker whose class requires evidence the baseline never declared is held open, so a baseline
+# that omits the marker entirely fails this gate no matter how complete its prose is.
+#
+# Declarations are filtered by `substantiate_declared_evidence()` before they count: a
+# location identifier needs a path in the baseline that resolves inside the workspace, a
+# captured-content identifier needs a fenced block. Otherwise the audited party could
+# switch this gate off against itself with one line of free text. Each identifier that
+# fails this check is itself an open EVIDENCE_COMPLETENESS_FAIL blocker, even when no
+# reviewer raised a blocker.
+#
+# A blocker's class comes from the reviewer: `[path:line] (class: rollback_gap) ...` right
+# after the citation. An untagged blocker is `logic_flaw`; the class is never guessed from
+# words the blocker happens to mention.
+blocker_classes:
+  schema_violation:
+    description: >
+      Output or data structure does not conform to the declared schema.
+    required_evidence:
+      - schema_file          # Path to the authoritative schema definition
+      - actual_output        # The non-conforming output or data sample
+
+  interface_mismatch:
+    description: >
+      Implementation diverges from the declared interface contract.
+    required_evidence:
+      - interface_definition # Path to the interface spec (e.g. protobuf, OpenAPI, type stub)
+      - implementation_file  # Path to the file containing the divergent implementation
+
+  missing_artifact:
+    description: >
+      An artifact required by the plan or spec is absent from the workspace.
+    required_evidence:
+      - expected_artifact_path  # The path where the artifact was expected to exist
+
+  test_failure:
+    description: >
+      One or more tests fail or produce unexpected results.
+    required_evidence:
+      - test_file            # Path to the failing test source
+      - test_output          # Captured stdout/stderr showing the failure
+
+  rollback_gap:
+    description: >
+      Rollback plan is missing, incomplete, or its verification test fails.
+    required_evidence:
+      - rollback_plan        # Path to or inline content of the rollback plan
+      - rollback_test_output # Captured output of the rollback verification test
+
+  logic_flaw:
+    description: >
+      A logical error or unsound reasoning chain in the implementation.
+    required_evidence:
+      - affected_code_path   # Path to the file containing the flawed logic
+      - reasoning_trace      # Step-by-step explanation of why the logic is unsound
+
+  assumption_violation:
+    description: >
+      A stated or implicit assumption is contradicted by evidence.
+    required_evidence:
+      - assumption_source    # Where the assumption was originally stated or implied
+      - counter_evidence     # Evidence that contradicts the assumption

@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# macOS
+.DS_Store
+
+# Vim
+*.sw[po]
+*~
+
+# AI agent instructions and local config
+AGENTS.md
+CLAUDE.md
+CLAUDE.local.md
+.claude/
+.codex/
+
+# Consensus audit workspace (round artifacts, baselines, reports, logs)
+.discuss/

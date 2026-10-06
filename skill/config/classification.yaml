@@ -1,0 +1,54 @@
+# classification.yaml
+# Reviewer scope and domain boundary rules (C2).
+# Each reviewer has a clearly defined surface area. Blockers raised outside
+# a reviewer's primary_surface should be downgraded or re-routed.
+# ---
+config_version: 1
+schema: "reviewer_scope_v1"
+
+# -----------------------------------------------------------------------------
+# Reviewer scope definitions
+# -----------------------------------------------------------------------------
+reviewers:
+  # Tim Sir -- protocol and evidence-gate logic
+  tim-sir:
+    primary_surface: >
+      Protocol integrity, dependency coherence, architecture fit, and
+      evidence-gate logic.
+    blocker_budget: >
+      May spend blockers on: circular dependencies, violated invariants,
+      protocol state-machine violations, missing error-propagation paths,
+      and architectural regression (e.g. layer-skipping calls).
+    out_of_scope: >
+      Should NOT raise blockers on: evidence formatting, test coverage
+      percentages, operational rollout sequencing, or runtime resource
+      limits.
+
+  # Sam Koo -- evidence and forensics
+  sam-koo:
+    primary_surface: >
+      Evidence completeness, reproducibility, plan-vs-actual proof, and
+      edge-case traceability.
+    blocker_budget: >
+      May spend blockers on: missing proof artifacts, non-reproducible
+      test results, plan-vs-actual discrepancies, untested edge cases
+      documented in the design, and evidence-chain gaps.
+    out_of_scope: >
+      Should NOT raise blockers on: high-level architectural decisions,
+      runtime operational concerns, deployment sequencing, or rollback
+      strategy adequacy.
+
+  # Madam Leung -- operations and case command
+  nicole-leung:
+    primary_surface: >
+      Case command, runtime and rollout safety, phased rollout planning,
+      rollback verification, guardrails, and operational blast-radius analysis.
+    blocker_budget: >
+      May spend blockers on: missing rollback plans, untested rollback
+      procedures, absent health-check gates, blast-radius exceeding
+      policy thresholds, and missing circuit-breaker or rate-limit
+      guardrails.
+    out_of_scope: >
+      Should NOT raise blockers on: code-level logic correctness,
+      evidence formatting, dependency graph structure, or protocol
+      semantics unrelated to runtime behavior.

@@ -1,0 +1,38 @@
+# postwork_reflow_policy.yaml
+# Postwork blocker reflow typing rules (C8).
+# When postwork review surfaces new blockers, this policy determines whether
+# the issue flows back to implementation (Type A) or all the way back to
+# prework/design (Type B).
+# ---
+config_version: 1
+
+# -----------------------------------------------------------------------------
+# Reflow types
+# -----------------------------------------------------------------------------
+reflow_types:
+  # Type A -- Implementation deviation
+  # The design is sound but the implementation drifted or missed something.
+  # Fix is localised: patch the code, add the test, redo postwork.
+  type_a:
+    label: "Implementation deviation"
+    triggers:
+      - missed_change          # A planned change was not applied
+      - test_gap               # Required test coverage is absent
+      - rollback_invalid       # Rollback procedure fails verification
+      - implementation_drift   # Code diverges from the approved design
+    action: reflow_to_implementation
+    rerun_postwork: true       # Postwork must be re-executed after the fix
+    reopen_prework: false      # Prework/design phase stays closed
+
+  # Type B -- Design omission
+  # The design itself is incomplete or unsound. Must revisit prework before
+  # any further implementation.
+  type_b:
+    label: "Design omission"
+    triggers:
+      - missing_constraint     # A constraint was never captured in the design
+      - logic_unsound          # Core reasoning in the design is flawed
+      - runtime_fatal_gap      # Operational gap that cannot be patched without redesign
+    action: reflow_to_prework
+    rerun_postwork: false      # Postwork will run naturally after the full re-pass
+    reopen_prework: true       # Prework/design phase must be reopened

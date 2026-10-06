@@ -1,0 +1,51 @@
+# provider_config.yaml
+# Cross-provider configuration for the consensus audit.
+# Defines authentication, execution backends, preflight probes,
+# and break-glass escalation strategies.
+# ---
+config_version: 1
+
+# -----------------------------------------------------------------------------
+# Provider definitions
+# -----------------------------------------------------------------------------
+providers:
+  openai:
+    auth_env_var: OPENAI_API_KEY
+    exec_backend: codex_exec
+    # A trivial prompt sent before the real workload to verify the provider
+    # is reachable and the API key is valid.
+    preflight_probe: "Reply exactly OK"
+    preflight_timeout_sec: 60
+
+  anthropic:
+    auth_env_var: ANTHROPIC_API_KEY
+    exec_backend: claude_code
+    preflight_probe: "Reply exactly OK"
+    preflight_timeout_sec: 60
+
+# -----------------------------------------------------------------------------
+# Break-glass escalation
+# When a provider or model is unavailable, these strategies define how the
+# system should degrade gracefully.
+# -----------------------------------------------------------------------------
+break_glass:
+  # U5/R3: Model-level fallback stays within same model with retry-and-backoff.
+  # No silent model swap when the selected reviewer model is unavailable.
+  model_level:
+    strategy: same_model_retry_with_backoff
+    max_retries: 3
+    backoff_seconds: [5, 15, 45]
+    description: >
+      If the primary model is rate-limited, retry the same model with
+      exponential backoff. No silent fallback to a different model.
+
+  # Provider-level fallback forbids silent cross-provider reroute. Agent
+  # selection must match the detected skill context.
+  provider_level:
+    strategy: same_provider_alternate_endpoint
+    forbidden_targets: []
+    description: >
+      If a primary endpoint is unreachable, retry alternate endpoints
+      (e.g. regional, proxy) within the same provider. Silent cross-provider
+      routing remains forbidden; Codex skills use Codex reviewers, and
+      Claude Code skills use Claude Code reviewers.
